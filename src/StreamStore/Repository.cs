@@ -48,14 +48,26 @@ namespace StreamStore {
                     foreach (var target in subscriptions) {
                         var position = curPos;
                         Task.Run(() => target(new RecordedEvent(stream, position, @event)));
-                        curPos++;
                     }
+                    curPos++;
                 }
             }
         }
         private void RecordNewStream(string accountNumber) {
+            var curPos = 0;
+            if (!_subscriptions.TryGetValue(AccountStreams, out var subscriptions)) {
+                subscriptions = new List<Action<RecordedEvent>>(); //if no subscription use an empty list
+            }
+            //n.b. realllly inefficient
+            if (File.Exists(AccountStreams)) {
+                curPos = File.ReadAllLines(AccountStreams).Length;
+            }
             using (var stream = File.AppendText(AccountStreams)) {
                 stream.WriteLine(JsonConvert.SerializeObject(new AccountStreamAdded(accountNumber), _settings));
+            }
+            foreach (var target in subscriptions) {
+                var position = curPos;
+                Task.Run(() => target(new RecordedEvent("Account", position, new RecordedEvent("Account",curPos,new AccountStreamAdded(accountNumber)))));
             }
         }
         public List<RecordedEvent> ReadStreamToEnd(string accountNumber) {
