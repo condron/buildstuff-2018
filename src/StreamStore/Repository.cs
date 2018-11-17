@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Newtonsoft.Json;
 
 namespace StreamStore {
@@ -11,10 +12,12 @@ namespace StreamStore {
         public string AccountFolder = Path.Combine(
             Environment.GetFolderPath(
                 Environment.SpecialFolder.CommonApplicationData), "Workshop/Accounts");
-        public string GetStreamFile(uint accountNumber) {
+        public string GetStreamFile(string accountNumber) {
             return Path.Combine(AccountFolder, $"{accountNumber}.stream");
         }
-        public void Append(uint accountNumber, object[] events) {
+
+
+        public void Append(string accountNumber, object[] events) {
 
             using (var stream = File.AppendText(GetStreamFile(accountNumber))) {
                 foreach (var @event in events) {
@@ -22,12 +25,15 @@ namespace StreamStore {
                 }
             }
         }
-        public List<object> ReadAll(uint accountNumber) {
-
-            var recordedEvents = File.ReadLines(GetStreamFile(accountNumber));
-            var @events = new List<object>();
-            foreach (var recordedEvent in recordedEvents) {
-                @events.Add(JsonConvert.DeserializeObject(recordedEvent, _settings));
+        public List<RecordedEvent> ReadStreamToEnd(string accountNumber) {
+            var recordedEvents = File.ReadLines(GetStreamFile(accountNumber)).ToList();
+            var @events = new List<RecordedEvent>();
+            for (int i = 0; i < recordedEvents.Count; i++) {
+                var recordedEvent = recordedEvents[i];
+                @events.Add( new RecordedEvent(
+                    accountNumber.ToString(),
+                    i,
+                    JsonConvert.DeserializeObject(recordedEvent, _settings)));
             }
             return @events;
         }
