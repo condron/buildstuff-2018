@@ -8,10 +8,15 @@ namespace Adapter {
             Console.WriteLine("Hello World!");
             var adapter = new AccountAdapter();
             var repo = new Repository();
-            var account = "100";
+            
             while (true) {
                 try {
-                    adapter.UpdateDb(account, repo.ReadStreamToEnd(account));
+                    var accounts = repo.ReadStreamToEnd("accounts");
+                    foreach (var recordedEvent in accounts) {
+                        var accountAdded = recordedEvent.Event as AccountStreamAdded;
+                        adapter.UpdateDb(accountAdded.AccountNumber, repo.ReadStreamToEnd(accountAdded.AccountNumber));
+                    }
+                  
                 }
                 catch (Exception e) {
                     Console.WriteLine(e);
