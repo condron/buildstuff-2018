@@ -79,7 +79,14 @@ namespace StreamStore.Tests {
             var recordedCredit = recordedEvent.Event as Credit;
             Assert.NotNull(recordedCredit);
             Assert.True(recordedCredit.Amount == 7);
-           
+        }
+        [Fact]
+        public void can_get_stream_names() {
+            var repo = new Repository();
+            var streams = repo.ReadStreamToEnd("accounts");
+            Assert.NotEmpty(streams);
+            var streamAddedEvent = streams[0].Event as AccountStreamAdded;
+            Assert.NotNull(streamAddedEvent);
         }
     }
 }
