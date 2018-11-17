@@ -26,16 +26,30 @@ namespace StreamStore {
             }
         }
         public List<RecordedEvent> ReadStreamToEnd(string accountNumber) {
+            return ReadStreamToEnd(accountNumber, 0);
+        }
+        public List<RecordedEvent> ReadStreamToEnd(string accountNumber, int from) {
             var recordedEvents = File.ReadLines(GetStreamFile(accountNumber)).ToList();
             var @events = new List<RecordedEvent>();
-            for (int i = 0; i < recordedEvents.Count; i++) {
+            for (int i = from; i < recordedEvents.Count; i++) {
                 var recordedEvent = recordedEvents[i];
-                @events.Add( new RecordedEvent(
-                    accountNumber.ToString(),
+                @events.Add(new RecordedEvent(
+                    accountNumber,
                     i,
                     JsonConvert.DeserializeObject(recordedEvent, _settings)));
             }
             return @events;
+        }
+
+        public RecordedEvent ReadStreamEvent(string accountNumber, int position) {
+            var recordedEvents = File.ReadLines(GetStreamFile(accountNumber)).ToList();
+            if (position < 0 || position > recordedEvents.Count - 1) {
+                throw new Exception($"Event Position not found. Stream {accountNumber}, Position {position}");
+            }
+            return new RecordedEvent(
+                    accountNumber,
+                    position,
+                    JsonConvert.DeserializeObject(recordedEvents[position], _settings));
         }
     }
 }
