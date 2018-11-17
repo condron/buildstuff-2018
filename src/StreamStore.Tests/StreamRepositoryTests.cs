@@ -1,5 +1,7 @@
-﻿using Messages;
+﻿using System;
+using Messages;
 using System.IO;
+using System.Threading;
 using Xunit;
 
 namespace StreamStore.Tests {
@@ -87,6 +89,29 @@ namespace StreamStore.Tests {
             Assert.NotEmpty(streams);
             var streamAddedEvent = streams[0].Event as AccountStreamAdded;
             Assert.NotNull(streamAddedEvent);
+        }
+
+        private long _subscriptionCount = 0;
+        [Fact]
+        public void can_subscribe_to_stream() {
+            var repo = new Repository();
+            var credit = new Credit(5);
+            var credit2 = new Credit(7);
+            var credit3 = new Credit(13);
+            var debit = new Debit(5);
+            string stream = "423";
+            if (File.Exists(repo.GetStreamFile(stream))) {
+                File.Delete(repo.GetStreamFile(stream));
+            }
+            var @events = new object[] { credit, debit, credit2, credit3 };
+            repo.Append(stream, @events);
+            repo.Subscribe(stream, 0, _ => Interlocked.Increment(ref _subscriptionCount));
+            SpinWait.SpinUntil(() => Interlocked.Read(ref _subscriptionCount) == 4, TimeSpan.FromSeconds(3));
+            Assert.Equal(4, _subscriptionCount);
+            repo.Append(stream,new object[]{debit});
+            SpinWait.SpinUntil(() => Interlocked.Read(ref _subscriptionCount) == 5, TimeSpan.FromSeconds(2));
+            Assert.Equal(5, _subscriptionCount);
+
         }
     }
 }
